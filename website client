@@ -1,0 +1,783 @@
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { 
+  Plus, 
+  Image, 
+  Type, 
+  Square, 
+  Trash2, 
+  Download, 
+  Upload, 
+  Palette,
+  Layout,
+  Monitor,
+  Smartphone,
+  Tablet
+} from "lucide-react";
+
+// Types for our website builder
+type ElementType = 'text' | 'image' | 'button';
+
+interface WebsiteElement {
+  id: string;
+  type: ElementType;
+  content: string;
+  imageUrl?: string;
+  style: {
+    width: string;
+    height: string;
+    backgroundColor: string;
+    color: string;
+    fontSize: string;
+    padding: string;
+    margin: string;
+    borderRadius: string;
+  };
+  position: { x: number; y: number };
+}
+
+interface Template {
+  id: string;
+  name: string;
+  description: string;
+  elements: WebsiteElement[];
+}
+
+// Predefined templates
+const TEMPLATES: Template[] = [
+  {
+    id: "landing",
+    name: "Landing Page",
+    description: "A modern landing page with hero section",
+    elements: [
+      {
+        id: "1",
+        type: "text",
+        content: "Welcome to Our Amazing Product",
+        style: {
+          width: "100%",
+          height: "auto",
+          backgroundColor: "transparent",
+          color: "#1e293b",
+          fontSize: "36px",
+          padding: "20px",
+          margin: "0",
+          borderRadius: "0"
+        },
+        position: { x: 0, y: 0 }
+      },
+      {
+        id: "2",
+        type: "text",
+        content: "Discover the future of web design with our intuitive tools",
+        style: {
+          width: "100%",
+          height: "auto",
+          backgroundColor: "transparent",
+          color: "#64748b",
+          fontSize: "18px",
+          padding: "10px 20px",
+          margin: "0",
+          borderRadius: "0"
+        },
+        position: { x: 0, y: 80 }
+      },
+      {
+        id: "3",
+        type: "button",
+        content: "Get Started",
+        style: {
+          width: "150px",
+          height: "50px",
+          backgroundColor: "#3b82f6",
+          color: "white",
+          fontSize: "16px",
+          padding: "0",
+          margin: "20px 20px 0",
+          borderRadius: "8px"
+        },
+        position: { x: 0, y: 150 }
+      }
+    ]
+  },
+  {
+    id: "portfolio",
+    name: "Portfolio",
+    description: "Showcase your work with a clean layout",
+    elements: [
+      {
+        id: "1",
+        type: "text",
+        content: "My Portfolio",
+        style: {
+          width: "100%",
+          height: "auto",
+          backgroundColor: "transparent",
+          color: "#1e293b",
+          fontSize: "32px",
+          padding: "20px",
+          margin: "0",
+          borderRadius: "0"
+        },
+        position: { x: 0, y: 0 }
+      },
+      {
+        id: "2",
+        type: "image",
+        content: "",
+        imageUrl: "",
+        style: {
+          width: "300px",
+          height: "200px",
+          backgroundColor: "#e2e8f0",
+          color: "transparent",
+          fontSize: "16px",
+          padding: "0",
+          margin: "20px",
+          borderRadius: "8px"
+        },
+        position: { x: 0, y: 80 }
+      },
+      {
+        id: "3",
+        type: "text",
+        content: "Project Description",
+        style: {
+          width: "100%",
+          height: "auto",
+          backgroundColor: "transparent",
+          color: "#64748b",
+          fontSize: "16px",
+          padding: "10px 20px",
+          margin: "0",
+          borderRadius: "0"
+        },
+        position: { x: 0, y: 300 }
+      }
+    ]
+  },
+  {
+    id: "blog",
+    name: "Blog Layout",
+    description: "A clean blog post layout",
+    elements: [
+      {
+        id: "1",
+        type: "text",
+        content: "Blog Post Title",
+        style: {
+          width: "100%",
+          height: "auto",
+          backgroundColor: "transparent",
+          color: "#1e293b",
+          fontSize: "28px",
+          padding: "20px",
+          margin: "0",
+          borderRadius: "0"
+        },
+        position: { x: 0, y: 0 }
+      },
+      {
+        id: "2",
+        type: "text",
+        content: "Published on January 1, 2023",
+        style: {
+          width: "100%",
+          height: "auto",
+          backgroundColor: "transparent",
+          color: "#94a3b8",
+          fontSize: "14px",
+          padding: "0 20px",
+          margin: "0",
+          borderRadius: "0"
+        },
+        position: { x: 0, y: 60 }
+      },
+      {
+        id: "3",
+        type: "image",
+        content: "",
+        imageUrl: "",
+        style: {
+          width: "100%",
+          height: "300px",
+          backgroundColor: "#e2e8f0",
+          color: "transparent",
+          fontSize: "16px",
+          padding: "0",
+          margin: "20px 0",
+          borderRadius: "0"
+        },
+        position: { x: 0, y: 100 }
+      },
+      {
+        id: "4",
+        type: "text",
+        content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        style: {
+          width: "100%",
+          height: "auto",
+          backgroundColor: "transparent",
+          color: "#334155",
+          fontSize: "16px",
+          padding: "0 20px",
+          margin: "0",
+          borderRadius: "0"
+        },
+        position: { x: 0, y: 420 }
+      }
+    ]
+  }
+];
+
+export default function WebsiteBuilder() {
+  // State management
+  const [elements, setElements] = useState<WebsiteElement[]>([]);
+  const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'elements' | 'templates' | 'preview'>('elements');
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [websiteTitle, setWebsiteTitle] = useState("My Website");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Get selected element data
+  const selectedElementData = elements.find(el => el.id === selectedElement) || null;
+  
+  // Add new element
+  const addElement = (type: ElementType) => {
+    const newElement: WebsiteElement = {
+      id: `element-${Date.now()}`,
+      type,
+      content: type === 'text' ? 'Edit this text' : type === 'button' ? 'Click Me' : '',
+      style: {
+        width: type === 'text' ? '100%' : '200px',
+        height: type === 'text' ? 'auto' : '150px',
+        backgroundColor: type === 'button' ? '#3b82f6' : 'transparent',
+        color: type === 'button' ? 'white' : '#000',
+        fontSize: '16px',
+        padding: '10px',
+        margin: '10px',
+        borderRadius: '4px'
+      },
+      position: { x: 50, y: 50 }
+    };
+    
+    setElements([...elements, newElement]);
+    setSelectedElement(newElement.id);
+  };
+  
+  // Update element content
+  const updateElementContent = (id: string, content: string) => {
+    setElements(elements.map(el => 
+      el.id === id ? { ...el, content } : el
+    ));
+  };
+  
+  // Update element style
+  const updateElementStyle = (id: string, style: Partial<WebsiteElement['style']>) => {
+    setElements(elements.map(el => 
+      el.id === id ? { ...el, style: { ...el.style, ...style } } : el
+    ));
+  };
+  
+  // Update element position
+  const updateElementPosition = (id: string, position: { x: number; y: number }) => {
+    setElements(elements.map(el => 
+      el.id === id ? { ...el, position } : el
+    ));
+  };
+  
+  // Delete element
+  const deleteElement = (id: string) => {
+    setElements(elements.filter(el => el.id !== id));
+    if (selectedElement === id) {
+      setSelectedElement(null);
+    }
+  };
+  
+  // Apply template
+  const applyTemplate = (template: Template) => {
+    setElements(template.elements);
+    setSelectedElement(null);
+  };
+  
+  // Export website as JSON
+  const exportWebsite = () => {
+    const data = {
+      title: websiteTitle,
+      elements
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${websiteTitle.replace(/\s+/g, '-')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  
+  // Import website from JSON
+  const importWebsite = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        setWebsiteTitle(data.title || "My Website");
+        setElements(data.elements || []);
+        setSelectedElement(null);
+      } catch (error) {
+        alert("Invalid file format");
+      }
+    };
+    reader.readAsText(file);
+  };
+  
+  // Render element based on type
+  const renderElement = (element: WebsiteElement) => {
+    const isSelected = selectedElement === element.id;
+    const style = {
+      ...element.style,
+      position: 'absolute' as const,
+      left: `${element.position.x}px`,
+      top: `${element.position.y}px`,
+      border: isSelected ? '2px dashed #3b82f6' : 'none',
+      cursor: 'move'
+    };
+    
+    switch (element.type) {
+      case 'text':
+        return (
+          <div 
+            key={element.id}
+            style={style}
+            onClick={() => setSelectedElement(element.id)}
+            className="outline-none"
+          >
+            {element.content}
+          </div>
+        );
+      case 'image':
+        return (
+          <div 
+            key={element.id}
+            style={style}
+            onClick={() => setSelectedElement(element.id)}
+            className="flex items-center justify-center outline-none"
+          >
+            {element.imageUrl ? (
+              <img 
+                src={element.imageUrl} 
+                alt="Uploaded" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="text-center text-gray-500">
+                <Image className="mx-auto h-8 w-8" />
+                <p className="text-sm mt-1">Image</p>
+              </div>
+            )}
+          </div>
+        );
+      case 'button':
+        return (
+          <button
+            key={element.id}
+            style={style}
+            onClick={() => setSelectedElement(element.id)}
+            className="outline-none"
+          >
+            {element.content}
+          </button>
+        );
+      default:
+        return null;
+    }
+  };
+  
+  // Handle drag for elements
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('elementId', id);
+  };
+  
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+  
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('elementId');
+    const containerRect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - containerRect.left;
+    const y = e.clientY - containerRect.top;
+    
+    updateElementPosition(id, { x, y });
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <h1 className="text-2xl font-bold text-gray-800">Website Builder</h1>
+          <Input
+            value={websiteTitle}
+            onChange={(e) => setWebsiteTitle(e.target.value)}
+            className="w-64"
+            placeholder="Website Title"
+          />
+        </div>
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+            <Upload className="mr-2 h-4 w-4" />
+            Import
+          </Button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            accept=".json"
+            onChange={importWebsite}
+          />
+          <Button onClick={exportWebsite}>
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </Button>
+        </div>
+      </header>
+      
+      {/* Main Content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+          <div className="border-b border-gray-200">
+            <div className="flex">
+              <button
+                className={`flex-1 py-3 text-center font-medium ${activeTab === 'elements' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
+                onClick={() => setActiveTab('elements')}
+              >
+                Elements
+              </button>
+              <button
+                className={`flex-1 py-3 text-center font-medium ${activeTab === 'templates' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
+                onClick={() => setActiveTab('templates')}
+              >
+                Templates
+              </button>
+              <button
+                className={`flex-1 py-3 text-center font-medium ${activeTab === 'preview' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
+                onClick={() => setActiveTab('preview')}
+              >
+                Preview
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-4">
+            {activeTab === 'elements' && (
+              <div>
+                <h2 className="text-lg font-semibold mb-4">Add Elements</h2>
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  <Button 
+                    variant="outline" 
+                    className="flex flex-col h-20"
+                    onClick={() => addElement('text')}
+                  >
+                    <Type className="h-5 w-5 mb-1" />
+                    <span>Text</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex flex-col h-20"
+                    onClick={() => addElement('image')}
+                  >
+                    <Image className="h-5 w-5 mb-1" />
+                    <span>Image</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex flex-col h-20"
+                    onClick={() => addElement('button')}
+                  >
+                    <Square className="h-5 w-5 mb-1" />
+                    <span>Button</span>
+                  </Button>
+                </div>
+                
+                {selectedElementData && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex justify-between items-center">
+                        <span>Edit Element</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => deleteElement(selectedElementData.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {selectedElementData.type !== 'image' && (
+                        <div>
+                          <Label htmlFor="content">Content</Label>
+                          <Textarea
+                            id="content"
+                            value={selectedElementData.content}
+                            onChange={(e) => updateElementContent(selectedElementData.id, e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                      )}
+                      
+                      {selectedElementData.type === 'image' && (
+                        <div>
+                          <Label htmlFor="imageUrl">Image URL</Label>
+                          <Input
+                            id="imageUrl"
+                            value={selectedElementData.imageUrl || ''}
+                            onChange={(e) => setElements(elements.map(el => 
+                              el.id === selectedElementData.id 
+                                ? { ...el, imageUrl: e.target.value } 
+                                : el
+                            ))}
+                            className="mt-1"
+                            placeholder="https://example.com/image.jpg"
+                          />
+                        </div>
+                      )}
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label htmlFor="width">Width</Label>
+                          <Input
+                            id="width"
+                            value={selectedElementData.style.width}
+                            onChange={(e) => updateElementStyle(selectedElementData.id, { width: e.target.value })}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="height">Height</Label>
+                          <Input
+                            id="height"
+                            value={selectedElementData.style.height}
+                            onChange={(e) => updateElementStyle(selectedElementData.id, { height: e.target.value })}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label htmlFor="bgColor">Background</Label>
+                          <div className="flex items-center mt-1">
+                            <Input
+                              id="bgColor"
+                              value={selectedElementData.style.backgroundColor}
+                              onChange={(e) => updateElementStyle(selectedElementData.id, { backgroundColor: e.target.value })}
+                              className="flex-1"
+                            />
+                            <div 
+                              className="w-8 h-8 rounded border ml-2 cursor-pointer"
+                              style={{ backgroundColor: selectedElementData.style.backgroundColor }}
+                              onClick={() => {
+                                const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
+                                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                                updateElementStyle(selectedElementData.id, { backgroundColor: randomColor });
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="textColor">Text Color</Label>
+                          <div className="flex items-center mt-1">
+                            <Input
+                              id="textColor"
+                              value={selectedElementData.style.color}
+                              onChange={(e) => updateElementStyle(selectedElementData.id, { color: e.target.value })}
+                              className="flex-1"
+                            />
+                            <div 
+                              className="w-8 h-8 rounded border ml-2 cursor-pointer"
+                              style={{ backgroundColor: selectedElementData.style.color }}
+                              onClick={() => {
+                                const colors = ['#000000', '#ffffff', '#3b82f6', '#ef4444', '#10b981'];
+                                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                                updateElementStyle(selectedElementData.id, { color: randomColor });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label htmlFor="fontSize">Font Size</Label>
+                          <Input
+                            id="fontSize"
+                            value={selectedElementData.style.fontSize}
+                            onChange={(e) => updateElementStyle(selectedElementData.id, { fontSize: e.target.value })}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="borderRadius">Border Radius</Label>
+                          <Input
+                            id="borderRadius"
+                            value={selectedElementData.style.borderRadius}
+                            onChange={(e) => updateElementStyle(selectedElementData.id, { borderRadius: e.target.value })}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+            
+            {activeTab === 'templates' && (
+              <div>
+                <h2 className="text-lg font-semibold mb-4">Templates</h2>
+                <p className="text-gray-600 mb-4">Choose a template to get started</p>
+                <div className="space-y-4">
+                  {TEMPLATES.map(template => (
+                    <Card 
+                      key={template.id} 
+                      className="cursor-pointer hover:border-blue-500 transition-colors"
+                      onClick={() => applyTemplate(template)}
+                    >
+                      <CardHeader>
+                        <CardTitle className="text-md flex items-center">
+                          <Layout className="mr-2 h-4 w-4" />
+                          {template.name}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-gray-600">{template.description}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {activeTab === 'preview' && (
+              <div>
+                <h2 className="text-lg font-semibold mb-4">Preview Settings</h2>
+                <div className="flex space-x-2 mb-4">
+                  <Button 
+                    variant={previewMode === 'desktop' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPreviewMode('desktop')}
+                  >
+                    <Monitor className="h-4 w-4 mr-1" />
+                    Desktop
+                  </Button>
+                  <Button 
+                    variant={previewMode === 'tablet' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPreviewMode('tablet')}
+                  >
+                    <Tablet className="h-4 w-4 mr-1" />
+                    Tablet
+                  </Button>
+                  <Button 
+                    variant={previewMode === 'mobile' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPreviewMode('mobile')}
+                  >
+                    <Smartphone className="h-4 w-4 mr-1" />
+                    Mobile
+                  </Button>
+                </div>
+                <div className="bg-gray-100 p-4 rounded-lg">
+                  <h3 className="font-medium mb-2">Preview Instructions</h3>
+                  <p className="text-sm text-gray-600">
+                    Switch to preview mode to see how your website looks on different devices.
+                    Your website will be displayed in the main canvas area.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Canvas Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setActiveTab('elements')}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Element
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setActiveTab('templates')}
+              >
+                <Layout className="h-4 w-4 mr-1" />
+                Templates
+              </Button>
+            </div>
+            <div className="text-sm text-gray-500">
+              {elements.length} elements
+            </div>
+          </div>
+          
+          <div 
+            className="flex-1 bg-gray-100 overflow-auto relative"
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
+            <div 
+              className="bg-white mx-auto shadow-lg relative"
+              style={{
+                width: previewMode === 'desktop' ? '100%' : 
+                       previewMode === 'tablet' ? '768px' : '375px',
+                height: '100%',
+                minHeight: '600px',
+                margin: previewMode !== 'desktop' ? '20px auto' : '0'
+              }}
+            >
+              {elements.length === 0 ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                  <Layout className="h-16 w-16 mb-4" />
+                  <h3 className="text-xl font-medium mb-2">Empty Canvas</h3>
+                  <p className="mb-4">Start by adding elements or selecting a template</p>
+                  <div className="flex space-x-2">
+                    <Button onClick={() => addElement('text')}>
+                      <Type className="mr-2 h-4 w-4" />
+                      Add Text
+                    </Button>
+                    <Button variant="outline" onClick={() => setActiveTab('templates')}>
+                      <Layout className="mr-2 h-4 w-4" />
+                      Browse Templates
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                elements.map(renderElement)
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
