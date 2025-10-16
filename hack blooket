@@ -1,7 +1,7 @@
 /**
  * @license AGPL-3.0
- * Blooket hack
- * Copyright (C) 2023-present glitch
+ * Blooket hack tokens and xp
+ * Copyright (C) 2025-present glitch
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
@@ -96,6 +96,6 @@
         img.onerror = img.onabort = null;
         cheat();
         let iframe = document.querySelector("iframe");
-        iframe.contentWindow.alert("it seem like ur cooked twin i think the hack works tho:3 \nhttps://discord.gg/jHjGrrdXP6\n(The cheat will still run after this alert)")
+        iframe.contentWindow.alert("please start digging in your butt the hack works but yeah please sybau and stop using nicotine twin (The cheat will still rape you after this jerkmate ranked match)")
     }
 })();
