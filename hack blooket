@@ -96,6 +96,6 @@
         img.onerror = img.onabort = null;
         cheat();
         let iframe = document.querySelector("iframe");
-        iframe.contentWindow.alert("please start digging in your butt the hack works but yeah please sybau and stop using nicotine twin (The cheat will still rape you after this jerkmate ranked match)")
+        iframe.contentWindow.alert("this cheat has made a error please contact fuzzyglitch_x for more info (The cheat will still work after this small error if u need assistence please contact fuzzyglitch_x on discord)")
     }
 })();
