@@ -1,0 +1,206 @@
+"use client";
+
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+
+const SAMPLE_TEXT = `The quick brown fox jumps over the lazy dog. This sentence contains every letter of the alphabet at least once. Typing practice is essential for improving your speed and accuracy. Consistent practice helps develop muscle memory and increases your words per minute. Focus on accuracy first, then gradually increase your speed. Good luck with your typing journey!`;
+
+export default function TypingPractice() {
+  const [text] = useState(SAMPLE_TEXT);
+  const words = text.split(" ");
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const [userInput, setUserInput] = useState("");
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [correctWords, setCorrectWords] = useState(0);
+  const [isFinished, setIsFinished] = useState(false);
+  const [errors, setErrors] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Focus input on initial render
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  // Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    
+    if (startTime && !isFinished) {
+      interval = setInterval(() => {
+        setElapsedTime((prev) => prev + 1);
+      }, 1000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [startTime, isFinished]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setUserInput(value);
+    
+    // Start timer on first keystroke
+    if (startTime === null) {
+      setStartTime(Date.now());
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === " " && userInput.trim() !== "") {
+      e.preventDefault();
+      
+      // Check if current word is correct
+      if (userInput.trim() === words[currentWordIndex]) {
+        setCorrectWords(prev => prev + 1);
+      } else {
+        setErrors(prev => prev + 1);
+      }
+      
+      // Move to next word
+      if (currentWordIndex < words.length - 1) {
+        setCurrentWordIndex(prev => prev + 1);
+        setUserInput("");
+      } else {
+        // Finished typing
+        setIsFinished(true);
+        setStartTime(null);
+      }
+    } else if (e.key === "Backspace" && userInput === "" && currentWordIndex > 0) {
+      // Allow backspacing to previous word
+      e.preventDefault();
+      setCurrentWordIndex(prev => prev - 1);
+      setUserInput(words[currentWordIndex - 1]);
+    }
+  };
+
+  const resetTest = () => {
+    setCurrentWordIndex(0);
+    setUserInput("");
+    setStartTime(null);
+    setElapsedTime(0);
+    setCorrectWords(0);
+    setErrors(0);
+    setIsFinished(false);
+    inputRef.current?.focus();
+  };
+
+  const calculateWPM = useCallback(() => {
+    if (elapsedTime === 0) return 0;
+    const minutes = elapsedTime / 60;
+    return Math.round(correctWords / minutes);
+  }, [correctWords, elapsedTime]);
+
+  const calculateAccuracy = useCallback(() => {
+    const totalTyped = correctWords + errors;
+    if (totalTyped === 0) return 0;
+    return Math.round((correctWords / totalTyped) * 100);
+  }, [correctWords, errors]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-3xl bg-white rounded-xl shadow-xl p-6 md:p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">Typing Practice</h1>
+          <p className="text-gray-600">Improve your typing speed and accuracy</p>
+        </div>
+
+        {/* Stats Bar */}
+        <div className="flex justify-between items-center mb-6 p-4 bg-gray-50 rounded-lg">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-indigo-600">{calculateWPM()}</div>
+            <div className="text-sm text-gray-500">WPM</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600">{calculateAccuracy()}%</div>
+            <div className="text-sm text-gray-500">Accuracy</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-700">{elapsedTime}s</div>
+            <div className="text-sm text-gray-500">Time</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-700">{currentWordIndex}/{words.length}</div>
+            <div className="text-sm text-gray-500">Words</div>
+          </div>
+        </div>
+
+        {/* Text Display */}
+        <div className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200 min-h-[120px]">
+          <div className="text-xl leading-relaxed">
+            {words.map((word, index) => (
+              <span
+                key={index}
+                className={`
+                  ${index === currentWordIndex 
+                    ? "bg-indigo-100 text-indigo-800 underline decoration-indigo-500" 
+                    : index < currentWordIndex 
+                      ? (words[index] === userInput.trim() || index < currentWordIndex - (userInput === "" ? 0 : 1)
+                        ? "text-green-600" 
+                        : "text-red-500")
+                      : "text-gray-700"}
+                  ${index === currentWordIndex && isFinished ? "bg-green-100" : ""}
+                  mr-2
+                `}
+              >
+                {word}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Input Area */}
+        <div className="mb-6">
+          <input
+            ref={inputRef}
+            type="text"
+            value={userInput}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            disabled={isFinished}
+            className="w-full p-4 text-xl border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none disabled:bg-gray-100"
+            placeholder={isFinished ? "Test completed!" : "Start typing here..."}
+          />
+        </div>
+
+        {/* Results */}
+        {isFinished && (
+          <div className="mb-6 p-6 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg text-white text-center">
+            <h2 className="text-2xl font-bold mb-2">Test Completed!</h2>
+            <div className="flex justify-center gap-8 mt-4">
+              <div>
+                <div className="text-3xl font-bold">{calculateWPM()}</div>
+                <div className="text-sm">Words per Minute</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold">{calculateAccuracy()}%</div>
+                <div className="text-sm">Accuracy</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold">{elapsedTime}s</div>
+                <div className="text-sm">Time</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Controls */}
+        <div className="flex justify-center">
+          <Button 
+            onClick={resetTest}
+            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg"
+          >
+            {isFinished ? "Try Again" : "Reset Test"}
+          </Button>
+        </div>
+
+        {/* Instructions */}
+        <div className="mt-8 text-center text-sm text-gray-500">
+          <p>Type the words above as quickly and accurately as possible.</p>
+          <p>Press Space to submit each word. Press Backspace to correct previous words.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
